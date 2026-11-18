@@ -14,12 +14,12 @@ on:
       - main
       - master
     paths:
-      - 'src/**'
+      - 'python/**'
+      - 'java/**'
+      - 'javascript/**'
+      - 'powershell/**'
+      - 'scripts/**'
       - '.github/workflows/security-testing.yml'
-      - 'pom.xml'
-      - 'build.gradle'
-      - 'package.json'
-      - 'requirements.txt'
       - 'Dockerfile'
 
 permissions: read-all

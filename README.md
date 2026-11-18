@@ -1,95 +1,102 @@
 # Secure Crypto Reference Examples
 
-This repository provides reference implementations and best practices for cryptographic operations in Python, Java, and PowerShell.
+Vetted classical and post-quantum (PQC) cryptographic reference implementations in **Python**, **Java 25**, **JavaScript (Node.js 22)**, and **PowerShell**, paired with Architectural Decision Records (ADRs) and an automated SBOM/CBOM supply-chain pipeline.
 
-## Project Status
+**Version:** `1.1.0` (see [CHANGELOG.md](CHANGELOG.md))
 
-### Recent Updates
-- **Python Dependencies**: Installed the `cryptography` library to support the Python reference examples.\n- **Java Path Resolution**: Updated `java/run_all.sh` to use absolute paths relative to the script location, ensuring consistent execution regardless of the working directory.\n- **Language Demo Fix**: Corrected `demo_langs.ps1` by removing the invalid `-ErrorAction` flag from the `javac` command, ensuring proper compilation and execution of Java examples.
+## Why This Project Exists
 
-## How to Run Demos
+Teams migrating to modern cryptography face two recurring problems:
+1. **Misconfigured classical primitives** (reused nonces, missing AAD, non-constant-time tag checks, or weak KDFs).
+2. **Quantum migration blind spots** ("Harvest Now, Decrypt Later" exposure on RSA, X25519, and Ed25519 without visibility into where those primitives live).
 
-You can run the full suite of secure code examples for Python and Java using the provided scripts.
+This repository serves as a hands-on reference exercise. It shows how to implement each primitive safely, test both happy paths and tamper rejection, and audit the resulting codebase with automated Software and Cryptographic Bills of Materials (SBOM & CBOM).
 
-### Bash
+## Supported Primitives & PQC Readiness
+
+| Category | Primitive / Standard | Quantum Status | Python | Java 25 | JavaScript (Node.js) | PowerShell |
+|---|---|---|---|---|---|---|
+| **PQC Key Encapsulation** | **ML-KEM-768** (NIST FIPS 203) | Post-Quantum Ready | — | [MlKemExample.java](java/src/main/java/org/example/crypto/MlKemExample.java) | [ml_kem_example.js](javascript/src/ml_kem_example.js) | — |
+| **PQC Digital Signatures** | **ML-DSA-65** (NIST FIPS 204) | Post-Quantum Ready | — | [MlDsaExample.java](java/src/main/java/org/example/crypto/MlDsaExample.java) | [ml_dsa_example.js](javascript/src/ml_dsa_example.js) | — |
+| **Authenticated Encryption** | **AES-256-GCM** (96-bit CSPRNG nonce + AAD) | Grover-Resistant (256-bit) | [aes_gcm_example.py](python/aes_gcm_example.py) | [AesGcmExample.java](java/src/main/java/org/example/crypto/AesGcmExample.java) | [aes_gcm_example.js](javascript/src/aes_gcm_example.js) | [AesGcmExample.ps1](powershell/AesGcmExample.ps1) |
+| **Hashing & MAC** | **SHA-256**, **HMAC-SHA-256** | Grover-Resistant | [hashing_example.py](python/hashing_example.py), [hmac_example.py](python/hmac_example.py) | [HashingExample.java](java/src/main/java/org/example/crypto/HashingExample.java), [HmacExample.java](java/src/main/java/org/example/crypto/HmacExample.java) | [hashing.js](javascript/src/hashing.js), [hmac_example.js](javascript/src/hmac_example.js) | — |
+| **Password KDF** | **PBKDF2-HMAC-SHA-256** | Grover-Resistant | [pbkdf2_example.py](python/pbkdf2_example.py) | [Pbkdf2Example.java](java/src/main/java/org/example/crypto/Pbkdf2Example.java) | — | — |
+| **Key Wrapping & Storage** | **AES Key Wrap (RFC 3394)**, Encrypted PKCS#8 PEM | Grover-Resistant | [aes_key_wrap_example.py](python/aes_key_wrap_example.py), [private_key_serialisation_example.py](python/private_key_serialisation_example.py) | [AesKeyWrapExample.java](java/src/main/java/org/example/crypto/AesKeyWrapExample.java) | — | — |
+| **Classical Asymmetric** | **X25519+HKDF**, **Ed25519**, **RSA-3072 OAEP/PSS** | Quantum-Vulnerable (Migration Target) | [x25519_hkdf_example.py](python/x25519_hkdf_example.py), [ed25519_example.py](python/ed25519_example.py), [rsa_oaep_pss_example.py](python/rsa_oaep_pss_example.py) | [X25519HkdfExample.java](java/src/main/java/org/example/crypto/X25519HkdfExample.java), [Ed25519Example.java](java/src/main/java/org/example/crypto/Ed25519Example.java), [RsaOaepPssExample.java](java/src/main/java/org/example/crypto/RsaOaepPssExample.java) | — | — |
+
+## Quickstart
+
+### Prerequisites
+- **Python 3.10+**: `pip install -r python/requirements.txt`
+- **Java 25+** (OpenJDK 24+ required for built-in `ML-KEM` and `ML-DSA` JCA providers)
+- **Node.js 22+**: `cd javascript && npm install`
+- **PowerShell 7+** (`pwsh`, optional for `powershell/AesGcmExample.ps1`)
+
+### Run Interactive Demos
+
 ```bash
-./demo_langs.sh
+# Bash (prompts for python, java, javascript, powershell, both, or all — or pass as an argument)
+./demo_langs.sh all
 ```
 
-### PowerShell
 ```powershell
-.\demo_langs.ps1
+# PowerShell
+.\demo_langs.ps1 -Choice all
 ```
 
-The scripts will prompt you to choose which language(s) you want to demonstrate (python, java, or both).
-
-## Secure Code Examples
-
-Below is a snippet of the AES-256-GCM authenticated encryption example in both Python and Java.
-
-### Python Example (`python/aes_gcm_example.py`)
-```python
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from crypto_support import random_bytes
-
-def encrypt(key: bytes, plaintext: bytes, aad: bytes | None) -> Envelope:
-    nonce = random_bytes(12)
-    return Envelope(nonce, AESGCM(key).encrypt(nonce, plaintext, aad))
-```
-
-### Java Example (`java/src/main/java/org/example/crypto/AesGcmExample.java`)
-```java
-import javax.crypto.Cipher;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-
-public class AesGcmExample {
-    public static byte[] encrypt(byte[] key, byte[] plaintext, byte[] aad) throws Exception {
-        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-        byte[] nonce = new byte[12];
-        new SecureRandom().nextBytes(nonce);
-        GCMParameterSpec spec = new GCMParameterSpec(128, nonce);
-        cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), spec);
-        cipher.updateAAD(aad);
-        return cipher.doFinal(plaintext);
-    }
-}
-```
-
-## 🛡️ Security & Cryptographic Posture
-
-This project tracks Software & Cryptographic Bill of Materials (SBOM & CBOM) and Post-Quantum Cryptography (PQC) readiness. See the latest [Cryptographic Audit & PQC Migration Report](docs/security/CRYPTOGRAPHIC_AUDIT.md).
-
-## Automated SBOM & CBOM Supply Chain Pipeline
-
-This repository incorporates an automated Software Bill of Materials (SBOM) and Cryptographic Bill of Materials (CBOM) supply chain pipeline to ensure complete component visibility, cryptographic transparency, and post-quantum migration readiness.
-
-### Continuous Integration Workflow (`.github/workflows/sbom-cbom.yml`)
-
-The automated CI workflow executes on pushes and pull requests to `main`/`master` and tag releases:
-1. **Dual-Format SBOM Generation**: Anchore / Syft generates CycloneDX (`oss/sbom.cyclonedx.json`) and SPDX 2.3 (`oss/sbom.spdx.json`) dependency inventories.
-2. **CBOM Generation**: `cbomkit-action` inspects the codebase to extract cryptographic assets into `oss/cbom.json`.
-3. **Semantic AST Crypto Auditing**: `scripts/scan_crypto_ast.py` conducts deep Abstract Syntax Tree parsing across source files to detect cryptographic primitives, algorithm choices, and key usages, reconciling findings against the CBOM.
-4. **Automated Verification Harness**: `scripts/test_boms.sh` enforces schema validity, file non-emptiness, and detection coverage.
-5. **PQC Readiness Analysis**: `scripts/analyze_cbom.py` assesses classical vs. post-quantum readiness, generating markdown step summaries and pushing audit records to `docs/security/CRYPTOGRAPHIC_AUDIT.md`.
-6. **Artifact Archival**: All generated BOM files under `oss/` are published as workflow artifacts with 90-day retention.
-
-### Local Script Tooling
-
-Developers can inspect, generate, and test BOM artifacts locally using the provided scripts:
+### Run Test Suites
 
 ```bash
-# Generate SBOM, CBOM, and run AST cryptographic scans locally into oss/
-bash scripts/generate_boms.sh
+# Python unit tests (positive + tamper/wrong-AAD/wrong-password checks)
+python3 -m unittest discover -s python -p 'test_*.py' -v
 
-# Run the automated verification test harness
+# Java examples + assertions (CryptoSupport.require + -ea)
+./java/run_all.sh
+java -ea -cp java/out org.example.crypto.TestCrypto
+
+# JavaScript unit tests (AES-GCM, SHA-256, HMAC, ML-KEM-768, ML-DSA-65)
+npm --prefix javascript test
+```
+
+## How to Adopt These Patterns
+
+1. **Start from the ADR**: Read the decision record in [ADRs/](ADRs/) for the primitive you need before copying code. Each ADR explains key sizes, nonces, padding, and tradeoffs.
+2. **Use 256-bit symmetric keys and SHA-256+**: AES-256-GCM and SHA-256 retain 128-bit security against Grover's algorithm. Generate a fresh 96-bit CSPRNG nonce per encryption and bind context via Additional Authenticated Data (AAD).
+3. **Plan PQC migration with FIPS 203 & 204**:
+   - Replace or hybridize `X25519` / `RSA-OAEP` key exchange with **ML-KEM-768** + **HKDF-SHA-256** ([MlKemExample.java](java/src/main/java/org/example/crypto/MlKemExample.java), [ml_kem_example.js](javascript/src/ml_kem_example.js)).
+   - Replace `Ed25519` / `RSA-PSS` signatures with **ML-DSA-65** ([MlDsaExample.java](java/src/main/java/org/example/crypto/MlDsaExample.java), [ml_dsa_example.js](javascript/src/ml_dsa_example.js)).
+4. **Verify failure modes**: Every wrapper should reject tampered ciphertexts, mismatched AAD, and invalid signatures in constant time.
+
+## Automated SBOM, CBOM & PQC Audit Pipeline
+
+This repository tracks component and cryptographic inventory in CI ([.github/workflows/sbom-cbom.yml](.github/workflows/sbom-cbom.yml)) and publishes the latest assessment to [docs/security/CRYPTOGRAPHIC_AUDIT.md](docs/security/CRYPTOGRAPHIC_AUDIT.md).
+
+### Run the Audit Locally
+
+```bash
+# Generate SBOM, CBOM, and AST cryptographic scan results into oss/
+bash scripts/generate_boms.sh -t dir -o oss .
+
+# Validate generated BOM schemas and coverage
 bash scripts/test_boms.sh oss
 
-# Analyze cryptographic posture and generate PQC readiness summaries
+# Generate the PQC readiness markdown summary
 python3 scripts/analyze_cbom.py oss/cbom.json --sbom oss/sbom.cyclonedx.json --markdown oss/crypto-summary.md
 ```
 
-### Architectural Decision Record
+### Architectural Decision Records
 
-For detailed background, architectural rationale, and evaluation of alternatives, see [ADR 009: Automated SBOM & CBOM Supply Chain Governance](ADRs/009-automated-sbom-cbom-supply-chain-governance.md).
+- [ADR-001: Cryptographic Standards](ADRs/001-cryptographic-standards.md)
+- [ADR-002: Authenticated Encryption (AES-GCM)](ADRs/002-authenticated-encryption-aes-gcm.md)
+- [ADR-003: Password Hashing (PBKDF2)](ADRs/003-password-hashing-pbkdf2.md)
+- [ADR-004: Key Agreement (X25519 + HKDF)](ADRs/004-key-agreement-x25519-hkdf.md)
+- [ADR-005: Asymmetric Cryptography (RSA-OAEP / PSS)](ADRs/005-asymmetric-cryptography-rsa-oaep-pss.md)
+- [ADR-006: Digital Signatures (Ed25519)](ADRs/006-digital-signatures-ed25519.md)
+- [ADR-007: Message Authentication (HMAC)](ADRs/007-message-authentication-hmac.md)
+- [ADR-008: Key Wrapping & Serialization](ADRs/008-key-wrapping-and-serialization.md)
+- [ADR-009: Automated SBOM & CBOM Governance](ADRs/009-automated-sbom-cbom-supply-chain-governance.md)
+- [ADR-010: Post-Quantum Cryptography (ML-KEM-768 & ML-DSA-65)](ADRs/010-post-quantum-cryptography-ml-kem-ml-dsa.md)
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, security rules, and PR requirements.

@@ -1,71 +1,54 @@
-# Contributing to [Project Name]
+# Contributing to Secure Crypto Reference Examples
 
-Thank you for your interest in contributing to this project! This document provides guidelines and information for contributors.
+Thank you for contributing. Follow these guidelines when adding or updating cryptographic examples, tests, or governance docs.
 
-## Code of Conduct
-Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+## Reporting Bugs and Suggesting Features
 
-## How to Contribute
-
-### Reporting Bugs
-1. **Check existing issues** - Search the issue tracker to see if the bug has already been reported.
-2. **Create a new issue** - If not found, create a new issue using the bug report template.
-3. **Provide details** - Include:
-   - Version of the software
-   - Operating system
-   - Steps to reproduce
-   - Expected vs actual behavior
-   - Relevant logs or screenshots
-
-### Suggesting Features
-1. **Check existing requests** - Search issues for similar feature requests.
-2. **Create a feature request** - Use the feature request template.
-3. **Describe the use case** - Explain why this feature would be valuable to the users.
-
-### Contributing Code
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/your-feature-name`
-3. **Make your changes**
-4. **Run tests**: Ensure all tests pass before submitting.
-5. **Commit your changes** with a descriptive message following Conventional Commits.
-6. **Push to your fork**: `git push origin feature/your-feature-name`
-7. **Create a Pull Request**
+1. Search existing issues and ADRs in [ADRs/](ADRs/) before opening a new issue.
+2. Include your OS, language runtime version (Python, JDK, Node.js, or PowerShell), and exact reproduction steps.
 
 ## Development Setup
 
 ### Prerequisites
-- Standard development environment for the project's primary language.
-- Git.
+- **Python**: Python 3.10+ (`pip install -r python/requirements.txt`)
+- **Java**: OpenJDK 25+ (required for built-in `ML-KEM-768` and `ML-DSA-65`)
+- **JavaScript**: Node.js 22+ (`cd javascript && npm install`)
+- **PowerShell**: PowerShell 7+ (`pwsh`, optional for `.ps1` examples)
 
-### Setup
-1. **Clone the Repository**:
-   ```bash
-   git clone [REPO_URL]
-   cd [REPO_NAME]
-   ```
-2. **Install Dependencies**:
-   - Follow the project's specific installation instructions (e.g., `npm install`, `pip install -r requirements.txt`, or `./gradlew build`).
-3. **Run Tests**:
-   - Execute the project's test suite to ensure your changes don't introduce regressions.
+### Running Tests Locally
+
+```bash
+# Python
+python3 -m unittest discover -s python -p 'test_*.py' -v
+
+# Java
+./java/run_all.sh
+java -ea -cp java/out org.example.crypto.TestCrypto
+
+# JavaScript (Node.js)
+npm --prefix javascript test
+```
+
+## Coding & Security Standards
+
+- **Review ADRs first**: Every cryptographic primitive choice must align with [ADRs/](ADRs/). New algorithm choices require a new ADR.
+- **No weak primitives**: Do not add MD5, SHA-1, ECB mode, PKCS#1 v1.5 encryption, or static/hardcoded nonces and salts.
+- **Constant-time verification**: Use constant-time comparison for MACs and derived secrets (`hmac.compare_digest` in Python, `MessageDigest.isEqual` in Java, `crypto.timingSafeEqual` in Node.js).
+- **Negative tests**: Every new primitive must include at least one negative test (tampered ciphertext, wrong AAD, or invalid signature).
 
 ## Commit Message Guidelines
-We use **Conventional Commits**. Please use the following prefixes:
-- `feat:` A new feature
-- `fix:` A bug fix
-- `docs:` Documentation only changes
-- `refactor:` A code change that neither fixes a bug nor adds a feature
-- `perf:` A code change that improves performance
-- `test:` Adding missing tests or correcting existing tests
-- `chore:` Changes to the build process or auxiliary tools and libraries
 
-Example: `feat(api): add new endpoint for user profiles`
+Use **Conventional Commits**:
+- `feat:` New cryptographic example or capability
+- `fix:` Bug fix or test correction
+- `docs:` Documentation and ADR updates
+- `chore:` CI, dependency, or build updates
+- `test:` Test additions or improvements
+
+Example: `feat(rust): add ML-KEM-768 and ML-DSA-65 reference examples`
 
 ## Pull Request Process
-1. Ensure all tests pass.
-2. Update documentation (if applicable).
-3. Add tests for new functionality.
-4. Fill out the PR template completely.
-5. Request review from maintainers.
 
-## Questions?
-Feel free to open an issue for questions or join discussions in existing issues.
+1. Create a feature branch (`git checkout -b feat/your-feature`).
+2. Run all language test suites and the local BOM check (`bash scripts/generate_boms.sh -t dir .` and `bash scripts/test_boms.sh oss`) if you modified cryptographic code.
+3. Fill out [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md).

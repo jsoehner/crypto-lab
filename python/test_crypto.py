@@ -40,6 +40,10 @@ class TestCryptography(unittest.TestCase):
         decrypted = decrypt(key, envelope, aad)
         self.assertEqual(plaintext, decrypted)
 
+        from cryptography.exceptions import InvalidTag
+        with self.assertRaises(InvalidTag):
+            decrypt(key, envelope, b"wrong-aad")
+
     def test_rsa_oaep_pss(self):
         private_key = generate_private_key()
         public_key = private_key.public_key()
@@ -48,6 +52,7 @@ class TestCryptography(unittest.TestCase):
         self.assertEqual(message, rsa_decrypt(private_key, ciphertext))
         signature = rsa_sign(private_key, message)
         self.assertTrue(rsa_verify(public_key, message, signature))
+        self.assertFalse(rsa_verify(public_key, b"tampered", signature))
 
     def test_ed25519(self):
         from cryptography.hazmat.primitives.asymmetric import ed25519
@@ -56,6 +61,7 @@ class TestCryptography(unittest.TestCase):
         message = b"ed25519 message"
         signature = sign(private_key, message)
         self.assertTrue(verify(public_key, message, signature))
+        self.assertFalse(verify(public_key, b"tampered", signature))
 
     def test_x25519_hkdf(self):
         from cryptography.hazmat.primitives.asymmetric import x25519
@@ -73,6 +79,17 @@ class TestCryptography(unittest.TestCase):
         wrapped = wrap(kek, content_key)
         recovered = unwrap(kek, wrapped)
         self.assertTrue(constant_time_equal(content_key, recovered))
+
+    def test_private_key_serialisation(self):
+        from cryptography.hazmat.primitives.asymmetric import ed25519
+        from private_key_serialisation_example import serialise_encrypted, load_encrypted
+        key = ed25519.Ed25519PrivateKey.generate()
+        password = b"strong-passphrase"
+        pem = serialise_encrypted(key, password)
+        loaded = load_encrypted(pem, password)
+        self.assertEqual(key.public_key().public_bytes_raw(), loaded.public_key().public_bytes_raw())
+        with self.assertRaises(ValueError):
+            load_encrypted(pem, b"wrong-passphrase")
 
 
 if __name__ == "__main__":
