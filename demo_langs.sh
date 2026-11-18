@@ -46,6 +46,8 @@ run_python() {
         echo -e "  ${YELLOW}[WHY]${NC}     Root KEKs never leave your external KMS, enabling instant kill-switch revocation and immutable audit logs."
         python3 python/external_kms_ekm_example.py
         python3 python/ciphertrust_ekm_example.py
+        python3 python/vault_ekm_proxy_example.py
+        python3 python/stage3_multi_cloud_ekm_orchestration.py
     else
         echo "Python 3 is not installed."
     fi

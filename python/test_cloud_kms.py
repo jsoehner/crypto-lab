@@ -29,6 +29,12 @@ from gcp_kms_byok_cmk_example import (
     encrypt_with_gcp_cmk,
     prepare_gcp_byok_blob,
 )
+from vault_ekm_proxy_example import (
+    SimulatedVaultEkmProxy,
+    decrypt_with_ekm_proxy,
+    encrypt_with_ekm_proxy,
+)
+from stage3_multi_cloud_ekm_orchestration import Stage3MultiCloudOrchestrator
 
 
 class TestCloudKmsPatterns(unittest.TestCase):
@@ -132,6 +138,55 @@ class TestCloudKmsPatterns(unittest.TestCase):
         client.deactivate_key("cm-ce-kek")
         with self.assertRaises(PermissionError):
             decrypt_with_ciphertrust(client, env, aad)
+
+    def test_vault_oidc_ekm_proxy_and_rate_limit(self):
+        print_edu_case(
+            "OIDC + mTLS EKM Proxy (HashiCorp Vault Transit Pattern)",
+            "Applications need Layer-7 OIDC identity validation and rate limiting in front of Layer-4 mTLS Vault Transit KEKs.",
+            "Wrapping/unwrapping a DEK via SimulatedVaultEkmProxy with valid JWT, invalid JWT (401), wrong AAD, and rate-limit (429).",
+            "Separating OIDC identity enforcement from Vault mTLS prevents unauthenticated callers from reaching the HSM/KMS engine.",
+        )
+        valid_jwt = "oidc.jwt.alice"
+        proxy = SimulatedVaultEkmProxy(valid_tokens={valid_jwt}, max_requests_per_window=4)
+        aad = b"realm=ekm-demo"
+
+        env = encrypt_with_ekm_proxy(proxy, valid_jwt, b"vault secret", aad)
+        self.assertEqual(decrypt_with_ekm_proxy(proxy, valid_jwt, env, aad), b"vault secret")
+
+        with self.assertRaises(InvalidTag):
+            decrypt_with_ekm_proxy(proxy, valid_jwt, env, b"wrong-aad")
+
+        with self.assertRaises(PermissionError):
+            decrypt_with_ekm_proxy(proxy, "expired.or.forged.jwt", env, aad)
+
+        # 5th request in window triggers 429 rate limit
+        with self.assertRaises(RuntimeError):
+            decrypt_with_ekm_proxy(proxy, valid_jwt, env, aad)
+
+    def test_stage3_ekm_vault_cloud_cascade_revocation(self):
+        print_edu_case(
+            "Stage 3: External KMS + Vault + Cloud/SaaS Multi-Cloud Cascade",
+            "Enterprises using Vault, Azure Key Vault, GCP Cloud KMS, and SaaS vaults risk fragmented key revocation during an incident.",
+            "Anchoring Vault, Azure, and GCP Service KEKs to a single Sovereign Root KEK, then deactivating the Root KEK.",
+            "One kill-switch action in the External KMS cascades across Vault and every Cloud/SaaS vault simultaneously.",
+        )
+        ctm = CipherTrustClient(SimulatedCipherTrustTransport())
+        orch = Stage3MultiCloudOrchestrator(ctm, "stage3-root-kek")
+        aad = b"org=global"
+
+        env_vault = orch.encrypt_for_target("vault-transit", b"vault-data", aad)
+        env_azure = orch.encrypt_for_target("azure-keyvault", b"azure-data", aad)
+        env_gcp = orch.encrypt_for_target("gcp-cloud-kms", b"gcp-data", aad)
+
+        self.assertEqual(orch.decrypt_for_target(env_vault, aad), b"vault-data")
+        self.assertEqual(orch.decrypt_for_target(env_azure, aad), b"azure-data")
+        self.assertEqual(orch.decrypt_for_target(env_gcp, aad), b"gcp-data")
+
+        # Single Root KEK deactivation cascades across all 3 platforms
+        ctm.deactivate_key("stage3-root-kek")
+        for env in (env_vault, env_azure, env_gcp):
+            with self.assertRaises(PermissionError):
+                orch.decrypt_for_target(env, aad)
 
 
 if __name__ == "__main__":

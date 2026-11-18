@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.6.0] - 2026-11-18
+
+### Added
+- **OIDC + mTLS Vault Transit EKM Proxy (`python/vault_ekm_proxy_example.py`)**: Absorbed the Layer-7 OIDC JWT + Layer-4 mTLS + Layer-1 Vault Transit pattern from the retired `ekm-demo` project, with offline simulator and unit tests in `python/test_cloud_kms.py`.
+- **ADR-013**: Documented the absorption of `ekm-demo` across `crypto-lab` and `ctm-ekm-lab` in `ADRs/013-oidc-mtls-ekm-proxy-and-vault-transit-absorption.md`.
+
 ## [1.5.0] - 2026-11-18
 
 ### Added
