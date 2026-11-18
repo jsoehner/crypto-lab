@@ -1,6 +1,6 @@
 {
   "name": "secure-crypto-reference-examples-js",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Node.js classical and post-quantum (FIPS 203 / FIPS 204) cryptographic reference examples",
   "type": "module",
   "scripts": {

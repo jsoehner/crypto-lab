@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.3.0] - 2026-11-18
+
+### Added
+- **Azure Key Vault / Managed HSM (BYOK & CMK)**: Added `python/azure_keyvault_byok_cmk_example.py` demonstrating RSA-OAEP-256 + AES-256-KWP BYOK wrapping and CMK envelope encryption without an EKM platform.
+- **GCP Cloud KMS / Cloud HSM (BYOK & CMK)**: Added `python/gcp_kms_byok_cmk_example.py` demonstrating ImportJob BYOK wrapping and Cloud HSM CMK envelope encryption with AAD.
+- **External KMS (EKM / HYOK) Control Plane**: Added `python/external_kms_ekm_example.py` demonstrating sovereign remote wrap/unwrap, caller allowlists, justification AAD binding, immutable audit logging, and an instant cryptographic kill-switch (`disable_key` / `destroy_key`).
+- **Cloud KMS Unit Tests & ADR-011**: Added `python/test_cloud_kms.py` and `ADRs/011-cloud-hsm-byok-cmk-and-ekm-control.md`.
+
 ## [1.2.0] - 2026-11-18
 
 ### Added
