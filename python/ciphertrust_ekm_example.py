@@ -272,7 +272,7 @@ def main() -> None:
     env = encrypt_with_ciphertrust(client, key_name, b"ciphertrust protected payload", aad)
     pt = decrypt_with_ciphertrust(client, env, aad)
     assert pt == b"ciphertrust protected payload"
-    mode = "live" if os.environ.get("CIPHERTRUST_URL") else "simulated"
+    mode = f"live ({os.environ['CIPHERTRUST_URL']})" if os.environ.get("CIPHERTRUST_URL") else "simulated (CTM unavailable)"
     print(f"CipherTrustEkmExample OK mode={mode} keyName={key_name}")
 
 

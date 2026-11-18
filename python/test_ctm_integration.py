@@ -22,7 +22,15 @@ from ciphertrust_ekm_example import (
 )
 
 
-@unittest.skipUnless(os.environ.get("CIPHERTRUST_URL"), "CIPHERTRUST_URL not set; skipping live CTM integration tests")
+_CTM_URL = os.environ.get("CIPHERTRUST_URL", "")
+if _CTM_URL:
+    _mtls = "mTLS enabled" if os.environ.get("CIPHERTRUST_CLIENT_CERT") else "mTLS disabled"
+    print(f"\n[CTM STATUS] AVAILABLE — Running live integration tests against {_CTM_URL} ({_mtls})", flush=True)
+else:
+    print("\n[CTM STATUS] NOT AVAILABLE — CIPHERTRUST_URL unset; skipping live CTM integration tests", flush=True)
+
+
+@unittest.skipUnless(_CTM_URL, "CIPHERTRUST_URL not set; CTM unavailable (skipping live integration tests)")
 class TestLiveCipherTrustIntegration(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
