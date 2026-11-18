@@ -13,6 +13,16 @@ import {
   sign as dsaSign,
   verify as dsaVerify,
 } from './ml_dsa_example.js';
+import {
+  generateX25519KeyPair,
+  encryptHybrid,
+  decryptHybrid,
+} from './hybrid_kem_example.js';
+import {
+  generateKeyPair as generateSlhKeyPair,
+  sign as slhSign,
+  verify as slhVerify,
+} from './slh_dsa_example.js';
 
 // 1. SHA-256
 const digest = sha256(Buffer.from('reference message', 'utf8'));
@@ -59,3 +69,28 @@ if (!dsaVerify(dsaKeys.publicKey, pqcMsg, sig)) {
   throw new Error('ML-DSA-65 verification failed');
 }
 console.log(`JS MlDsaExample signatureBytes=${sig.length}`);
+
+// 6. Hybrid X25519 + ML-KEM-768 + AES-256-GCM
+const aliceX = generateX25519KeyPair();
+const bobX = generateX25519KeyPair();
+const hybridAad = Buffer.from('hybrid-pqc-v1', 'utf8');
+const hybridPayload = encryptHybrid(
+  aliceX.privateKey,
+  bobX.publicKey,
+  kemKeys.publicKey,
+  Buffer.from('hybrid pqc payload', 'utf8'),
+  hybridAad,
+);
+const hybridPlaintext = decryptHybrid(bobX.privateKey, aliceX.publicKey, kemKeys.secretKey, hybridPayload, hybridAad);
+if (hybridPlaintext.toString('utf8') !== 'hybrid pqc payload') {
+  throw new Error('Hybrid X25519+ML-KEM-768 round-trip failed');
+}
+console.log('JS HybridKemExample round-trip OK');
+
+// 7. SLH-DSA-SHA2-128f (NIST FIPS 205)
+const slhKeys = generateSlhKeyPair();
+const slhSig = slhSign(slhKeys.secretKey, pqcMsg);
+if (!slhVerify(slhKeys.publicKey, pqcMsg, slhSig)) {
+  throw new Error('SLH-DSA verification failed');
+}
+console.log(`JS SlhDsaExample signatureBytes=${slhSig.length}`);

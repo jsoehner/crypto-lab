@@ -2,7 +2,7 @@
 
 Vetted classical and post-quantum (PQC) cryptographic reference implementations in **Python**, **Java 25**, **JavaScript (Node.js 22)**, and **PowerShell**, paired with Architectural Decision Records (ADRs) and an automated SBOM/CBOM supply-chain pipeline.
 
-**Version:** `1.1.0` (see [CHANGELOG.md](CHANGELOG.md))
+**Version:** `1.2.0` (see [CHANGELOG.md](CHANGELOG.md) and [PQC Migration Assessment](docs/security/PQC_MIGRATION_ASSESSMENT.md))
 
 ## Why This Project Exists
 
@@ -12,12 +12,25 @@ Teams migrating to modern cryptography face two recurring problems:
 
 This repository serves as a hands-on reference exercise. It shows how to implement each primitive safely, test both happy paths and tamper rejection, and audit the resulting codebase with automated Software and Cryptographic Bills of Materials (SBOM & CBOM).
 
+## PQC Upgrade Path Dashboard
+
+This dashboard summarizes current PQC support across the repository's language runtimes and highlights where native upgrades are blocked. See the full [PQC Upgrade Path Support & Blockers Report](docs/security/PQC_UPGRADE_PATH_SUPPORT.md) and [PQC Migration Assessment](docs/security/PQC_MIGRATION_ASSESSMENT.md).
+
+| Language / Runtime | Classical Asymmetric | ML-KEM-768 (FIPS 203) | Hybrid X25519 + ML-KEM-768 | ML-DSA-65 (FIPS 204) | SLH-DSA (FIPS 205) | Current Blocker / Next Unlock |
+|---|---|---|---|---|---|---|
+| **Java 25** (`OpenJDK 25.0.4.1`) | `X25519`, `Ed25519`, `RSA-3072` | 🟢 Native (JEP 496) | 🟢 Native | 🟢 Native (JEP 497) | 🔴 Blocked | Standard JCA lacks `SLH-DSA`; LTS `< JDK 24` lacks all PQC |
+| **JavaScript** (`Node.js v22.23.2`) | `X25519` (`node:crypto`) | 🟡 `@noble/post-quantum` | 🟡 `node:crypto` + `@noble` | 🟡 `@noble/post-quantum` | 🟡 `@noble/post-quantum` | `node:crypto` stdlib awaits OpenSSL 3.5+ PQC bindings |
+| **Python** (`cryptography 50.0.0`) | `X25519`, `Ed25519`, `RSA-3072` | 🔴 Blocked | 🔴 Blocked | 🔴 Blocked | 🔴 Blocked | PyCA `cryptography` has no native `ML-KEM`/`ML-DSA`/`SLH-DSA` API yet |
+| **PowerShell** (`.NET`) | `AesGcm` only | 🔴 Blocked | 🔴 Blocked | 🔴 Blocked | 🔴 Blocked | Requires .NET 10+ and OS OpenSSL 3.5+ / CNG support |
+
 ## Supported Primitives & PQC Readiness
 
 | Category | Primitive / Standard | Quantum Status | Python | Java 25 | JavaScript (Node.js) | PowerShell |
 |---|---|---|---|---|---|---|
-| **PQC Key Encapsulation** | **ML-KEM-768** (NIST FIPS 203) | Post-Quantum Ready | — | [MlKemExample.java](java/src/main/java/org/example/crypto/MlKemExample.java) | [ml_kem_example.js](javascript/src/ml_kem_example.js) | — |
+| **PQC Key Encapsulation** | **ML-KEM-768** (NIST FIPS 203) & KEM-DEM | Post-Quantum Ready | — | [MlKemExample.java](java/src/main/java/org/example/crypto/MlKemExample.java) | [ml_kem_example.js](javascript/src/ml_kem_example.js) | — |
+| **Hybrid Key Agreement** | **X25519 + ML-KEM-768** + HKDF-SHA-256 | Post-Quantum Ready (Hybrid) | — | [HybridX25519MlKemExample.java](java/src/main/java/org/example/crypto/HybridX25519MlKemExample.java) | [hybrid_kem_example.js](javascript/src/hybrid_kem_example.js) | — |
 | **PQC Digital Signatures** | **ML-DSA-65** (NIST FIPS 204) | Post-Quantum Ready | — | [MlDsaExample.java](java/src/main/java/org/example/crypto/MlDsaExample.java) | [ml_dsa_example.js](javascript/src/ml_dsa_example.js) | — |
+| **PQC Hash-Based Signatures** | **SLH-DSA-SHA2-128f** (NIST FIPS 205) | Post-Quantum Ready | — | — | [slh_dsa_example.js](javascript/src/slh_dsa_example.js) | — |
 | **Authenticated Encryption** | **AES-256-GCM** (96-bit CSPRNG nonce + AAD) | Grover-Resistant (256-bit) | [aes_gcm_example.py](python/aes_gcm_example.py) | [AesGcmExample.java](java/src/main/java/org/example/crypto/AesGcmExample.java) | [aes_gcm_example.js](javascript/src/aes_gcm_example.js) | [AesGcmExample.ps1](powershell/AesGcmExample.ps1) |
 | **Hashing & MAC** | **SHA-256**, **HMAC-SHA-256** | Grover-Resistant | [hashing_example.py](python/hashing_example.py), [hmac_example.py](python/hmac_example.py) | [HashingExample.java](java/src/main/java/org/example/crypto/HashingExample.java), [HmacExample.java](java/src/main/java/org/example/crypto/HmacExample.java) | [hashing.js](javascript/src/hashing.js), [hmac_example.js](javascript/src/hmac_example.js) | — |
 | **Password KDF** | **PBKDF2-HMAC-SHA-256** | Grover-Resistant | [pbkdf2_example.py](python/pbkdf2_example.py) | [Pbkdf2Example.java](java/src/main/java/org/example/crypto/Pbkdf2Example.java) | — | — |

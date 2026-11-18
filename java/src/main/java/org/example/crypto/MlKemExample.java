@@ -34,6 +34,29 @@ public final class MlKemExample {
         return decapsulator.decapsulate(encapsulation);
     }
 
+    public record KemEnvelope(byte[] encapsulation, byte[] salt, AesGcmExample.Envelope dataEnvelope) {}
+
+    /**
+     * KEM-DEM public-key encryption (replaces RSA-OAEP): ML-KEM-768 + HKDF-SHA-256 + AES-256-GCM.
+     */
+    public static KemEnvelope encryptWithKem(PublicKey recipientPublicKey, byte[] plaintext, byte[] aad) throws Exception {
+        KEM.Encapsulated encapsulated = encapsulate(recipientPublicKey);
+        byte[] salt = CryptoSupport.randomBytes(16);
+        byte[] info = "ml-kem-768-dem-aes-256-gcm".getBytes(StandardCharsets.UTF_8);
+        byte[] keyBytes = X25519HkdfExample.hkdfSha256(encapsulated.key().getEncoded(), salt, info, 32);
+        SecretKey aesKey = new javax.crypto.spec.SecretKeySpec(keyBytes, "AES");
+        AesGcmExample.Envelope envelope = AesGcmExample.encrypt(aesKey, plaintext, aad);
+        return new KemEnvelope(encapsulated.encapsulation(), salt, envelope);
+    }
+
+    public static byte[] decryptWithKem(PrivateKey recipientPrivateKey, KemEnvelope kemEnvelope, byte[] aad) throws Exception {
+        SecretKey sharedSecret = decapsulate(recipientPrivateKey, kemEnvelope.encapsulation());
+        byte[] info = "ml-kem-768-dem-aes-256-gcm".getBytes(StandardCharsets.UTF_8);
+        byte[] keyBytes = X25519HkdfExample.hkdfSha256(sharedSecret.getEncoded(), kemEnvelope.salt(), info, 32);
+        SecretKey aesKey = new javax.crypto.spec.SecretKeySpec(keyBytes, "AES");
+        return AesGcmExample.decrypt(aesKey, kemEnvelope.dataEnvelope(), aad);
+    }
+
     public static void main(String[] args) throws Exception {
         KeyPair recipientKeys = generateKeyPair();
 

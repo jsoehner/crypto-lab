@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.2.0] - 2026-11-18
+
+### Added
+- **Hybrid PQC Key Agreement**: Added `HybridX25519MlKemExample.java` (Java 25) and `javascript/src/hybrid_kem_example.js` (Node.js 22) combining classical `X25519` with `ML-KEM-768` via `HKDF-SHA-256` and `AES-256-GCM`.
+- **PQC KEM-DEM Encryption (Replaces RSA-OAEP)**: Added `encryptWithKem`/`decryptWithKem` to `MlKemExample.java` and `javascript/src/ml_kem_example.js`.
+- **SLH-DSA (NIST FIPS 205)**: Added `javascript/src/slh_dsa_example.js` for stateless hash-based signatures (`slh_dsa_sha2_128f`).
+- **PQC Migration Assessment**: Added `docs/security/PQC_MIGRATION_ASSESSMENT.md` mapping every classical function in the repository to its quantum-resistant equivalent.
+
 ## [1.1.0] - 2026-11-18
 
 ### Added
