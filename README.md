@@ -77,6 +77,8 @@ npm --prefix javascript test
 
 ## Live External KMS Integration (`ctm-ekm-lab` Dependency)
 
+![Sovereign eKMS Control Plane: crypto-lab + ctm-ekm-lab](docs/assets/ekms-control-plane-infographic.jpg)
+
 When the companion [ctm-ekm-lab](https://github.com/jsoehner/ctm-ekm-lab) service (or a real CipherTrust Manager Community Edition appliance) is running and `.env.ciphertrust` is sourced, `crypto-lab` automatically switches from offline simulation to live HTTPS + mTLS mode:
 
 ```bash
