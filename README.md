@@ -79,6 +79,8 @@ npm --prefix javascript test
 
 ![Sovereign eKMS Control Plane: crypto-lab + ctm-ekm-lab](docs/assets/ekms-control-plane-infographic.jpg)
 
+See the [Three-Stage Sovereign EKM & PQC Workflow Architecture](docs/security/THREE_STAGE_EKM_WORKFLOW.md) for detailed Mermaid flowcharts, runtime sequence diagrams, and KEK lifecycle state machines.
+
 When the companion [ctm-ekm-lab](https://github.com/jsoehner/ctm-ekm-lab) service (or a real CipherTrust Manager Community Edition appliance) is running and `.env.ciphertrust` is sourced, `crypto-lab` automatically switches from offline simulation to live HTTPS + mTLS mode:
 
 ```bash
