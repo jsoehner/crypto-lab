@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.4.0] - 2026-11-18
+
+### Added
+- **CipherTrust Manager CE REST Client (`python/ciphertrust_ekm_example.py`)**: Added a CipherTrust Manager REST API (`/api/v1/auth/tokens`, `/api/v1/vault/keys2`, `/api/v1/crypto/{encrypt,decrypt}`) envelope-encryption client supporting live `CIPHERTRUST_URL` + mTLS and an offline protocol simulator, with unit tests in `python/test_cloud_kms.py`.
+
 ## [1.3.0] - 2026-11-18
 
 ### Added

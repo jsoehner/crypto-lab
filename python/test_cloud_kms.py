@@ -9,6 +9,12 @@ from azure_keyvault_byok_cmk_example import (
     encrypt_with_azure_cmk,
     prepare_azure_byok_blob,
 )
+from ciphertrust_ekm_example import (
+    CipherTrustClient,
+    SimulatedCipherTrustTransport,
+    decrypt_with_ciphertrust,
+    encrypt_with_ciphertrust,
+)
 from crypto_support import random_bytes
 from external_kms_ekm_example import (
     ExternalKmsControlPlane,
@@ -89,6 +95,22 @@ class TestCloudKmsPatterns(unittest.TestCase):
         self.assertEqual(ekm._keys[key_uri].state, KeyState.DESTROYED)
         with self.assertRaises(PermissionError):
             ekm.enable_key(key_uri, actor="secops", reason="attempt-restore")
+
+    def test_ciphertrust_rest_ekm_envelope_and_revocation(self):
+        client = CipherTrustClient(SimulatedCipherTrustTransport())
+        key_meta = client.create_aes256_key("cm-ce-kek")
+        self.assertEqual(key_meta["state"], "Active")
+
+        aad = b"env=lab;app=orders"
+        env = encrypt_with_ciphertrust(client, "cm-ce-kek", b"ciphertrust secret", aad)
+        self.assertEqual(decrypt_with_ciphertrust(client, env, aad), b"ciphertrust secret")
+
+        with self.assertRaises(InvalidTag):
+            decrypt_with_ciphertrust(client, env, b"wrong-aad")
+
+        client.deactivate_key("cm-ce-kek")
+        with self.assertRaises(PermissionError):
+            decrypt_with_ciphertrust(client, env, aad)
 
 
 if __name__ == "__main__":

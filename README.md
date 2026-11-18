@@ -2,7 +2,7 @@
 
 Vetted classical and post-quantum (PQC) cryptographic reference implementations in **Python**, **Java 25**, **JavaScript (Node.js 22)**, and **PowerShell**, paired with Architectural Decision Records (ADRs) and an automated SBOM/CBOM supply-chain pipeline.
 
-**Version:** `1.3.0` (see [CHANGELOG.md](CHANGELOG.md) and [PQC Migration Assessment](docs/security/PQC_MIGRATION_ASSESSMENT.md))
+**Version:** `1.4.0` (see [CHANGELOG.md](CHANGELOG.md) and [PQC Migration Assessment](docs/security/PQC_MIGRATION_ASSESSMENT.md))
 
 ## Why This Project Exists
 
@@ -36,7 +36,7 @@ This dashboard summarizes current PQC support across the repository's language r
 | **Password KDF** | **PBKDF2-HMAC-SHA-256** | Grover-Resistant | [pbkdf2_example.py](python/pbkdf2_example.py) | [Pbkdf2Example.java](java/src/main/java/org/example/crypto/Pbkdf2Example.java) | — | — |
 | **Key Wrapping & Storage** | **AES Key Wrap (RFC 3394)**, Encrypted PKCS#8 PEM | Grover-Resistant | [aes_key_wrap_example.py](python/aes_key_wrap_example.py), [private_key_serialisation_example.py](python/private_key_serialisation_example.py) | [AesKeyWrapExample.java](java/src/main/java/org/example/crypto/AesKeyWrapExample.java) | — | — |
 | **Cloud HSM (BYOK & CMK)** | Azure Managed HSM & GCP Cloud KMS (`RSA-OAEP` + `AES-KWP` + Envelope) | Cloud-Managed | [azure_keyvault_byok_cmk_example.py](python/azure_keyvault_byok_cmk_example.py), [gcp_kms_byok_cmk_example.py](python/gcp_kms_byok_cmk_example.py) | — | — | — |
-| **External KMS (EKM / HYOK)** | Sovereign Remote Wrap/Unwrap, Policy, Audit & Kill-Switch | Sovereign Control | [external_kms_ekm_example.py](python/external_kms_ekm_example.py) | — | — | — |
+| **External KMS (EKM / HYOK)** | Sovereign Remote Wrap/Unwrap, Policy, Audit & Kill-Switch; CipherTrust Manager CE REST Client | Sovereign Control | [external_kms_ekm_example.py](python/external_kms_ekm_example.py), [ciphertrust_ekm_example.py](python/ciphertrust_ekm_example.py) | — | — | — |
 | **Classical Asymmetric** | **X25519+HKDF**, **Ed25519**, **RSA-3072 OAEP/PSS** | Quantum-Vulnerable (Migration Target) | [x25519_hkdf_example.py](python/x25519_hkdf_example.py), [ed25519_example.py](python/ed25519_example.py), [rsa_oaep_pss_example.py](python/rsa_oaep_pss_example.py) | [X25519HkdfExample.java](java/src/main/java/org/example/crypto/X25519HkdfExample.java), [Ed25519Example.java](java/src/main/java/org/example/crypto/Ed25519Example.java), [RsaOaepPssExample.java](java/src/main/java/org/example/crypto/RsaOaepPssExample.java) | — | — |
 
 ## Quickstart
