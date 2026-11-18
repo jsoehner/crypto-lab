@@ -1,4 +1,4 @@
-"""Unit tests for Azure Key Vault BYOK/CMK, GCP Cloud KMS BYOK/CMK, and External KMS (EKM/HYOK)."""
+"""Unit tests for Azure BYOK/CMK, GCP BYOK/CMK, and External KMS (EKM/HYOK) with educational context."""
 
 import unittest
 from cryptography.exceptions import InvalidTag
@@ -16,6 +16,7 @@ from ciphertrust_ekm_example import (
     encrypt_with_ciphertrust,
 )
 from crypto_support import random_bytes
+from edu_output import print_edu_case
 from external_kms_ekm_example import (
     ExternalKmsControlPlane,
     KeyState,
@@ -32,6 +33,12 @@ from gcp_kms_byok_cmk_example import (
 
 class TestCloudKmsPatterns(unittest.TestCase):
     def test_azure_byok_and_cmk_envelope(self):
+        print_edu_case(
+            "Azure Managed HSM: BYOK + CMK Envelope Encryption (No External EKM)",
+            "Organizations want to generate root keys on-premises and import them into Azure HSM without exposing raw key material in transit.",
+            "Wrapping an on-prem key with RSA-OAEP-256 + AES-256-KWP for BYOK import, then wrapping a local AES-256-GCM DEK with the Azure CMK.",
+            "BYOK keeps key generation sovereign, while envelope encryption keeps bulk data fast and local while protecting the DEK inside Azure HSM.",
+        )
         hsm = SimulatedAzureManagedHsm()
         on_prem_key = random_bytes(32)
         blob = prepare_azure_byok_blob(hsm.kek_public, on_prem_key)
@@ -46,6 +53,12 @@ class TestCloudKmsPatterns(unittest.TestCase):
             decrypt_with_azure_cmk(hsm, env, b"wrong-aad")
 
     def test_gcp_byok_and_cmk_envelope(self):
+        print_edu_case(
+            "GCP Cloud KMS / Cloud HSM: BYOK + CMK Envelope Encryption (No External EKM)",
+            "Cloud workloads need customer-managed HSM keys with strict context binding so wrapped DEKs cannot be replayed across services.",
+            "Wrapping key material for a GCP ImportJob (RSA-OAEP-3072-SHA256 + AES-256-KWP) and wrapping DEKs with key-name + AAD.",
+            "Binding the GCP CryptoKey resource name and service AAD prevents cross-environment ciphertext substitution.",
+        )
         kms = SimulatedGcpCloudHsm()
         key_name = "projects/p/locations/us/keyRings/r/cryptoKeys/k"
         on_prem_key = random_bytes(32)
@@ -61,6 +74,12 @@ class TestCloudKmsPatterns(unittest.TestCase):
             decrypt_with_gcp_cmk(kms, env, b"wrong-aad")
 
     def test_external_kms_ekm_control_and_kill_switch(self):
+        print_edu_case(
+            "External KMS (EKM / HYOK): Sovereign Control Plane & Kill-Switch",
+            "Regulated workloads cannot allow cloud providers to hold root KEKs or decrypt data after an incident or subpoena.",
+            "Testing caller allowlists, justification AAD binding, disable_key() kill-switch, enable_key() recovery, and destroy_key() zeroization.",
+            "Because the root KEK never leaves your external KMS, disabling it instantly renders all cloud-stored ciphertexts unreadable.",
+        )
         ekm = ExternalKmsControlPlane()
         caller = "spiffe://cloud/sa/app"
         key_uri = ekm.create_key("root-kek", allowed_callers={caller})
@@ -72,20 +91,16 @@ class TestCloudKmsPatterns(unittest.TestCase):
             b"ekm payload",
         )
 
-        # Justification mismatch must fail (bound as AAD)
         with self.assertRaises(InvalidTag):
             cloud_decrypt_with_ekm(ekm, env, aad, caller=caller, justification="DIFFERENT_REASON")
 
-        # Unauthorized caller must be denied and logged
         with self.assertRaises(PermissionError):
             cloud_decrypt_with_ekm(ekm, env, aad, caller="spiffe://cloud/sa/rogue", justification="WRITE")
 
-        # Instant kill-switch blocks decryption immediately
         ekm.disable_key(key_uri, actor="secops", reason="incident")
         with self.assertRaises(PermissionError):
             cloud_decrypt_with_ekm(ekm, env, aad, caller=caller, justification="WRITE")
 
-        # Re-enable restores access; destroy permanently zeroizes
         ekm.enable_key(key_uri, actor="secops", reason="cleared")
         self.assertEqual(
             cloud_decrypt_with_ekm(ekm, env, aad, caller=caller, justification="WRITE"),
@@ -97,6 +112,12 @@ class TestCloudKmsPatterns(unittest.TestCase):
             ekm.enable_key(key_uri, actor="secops", reason="attempt-restore")
 
     def test_ciphertrust_rest_ekm_envelope_and_revocation(self):
+        print_edu_case(
+            "CipherTrust Manager REST Client (Offline Protocol Simulator)",
+            "Teams need to test CipherTrust REST EKM integrations in CI without standing up a full 8 GB appliance.",
+            "Running CipherTrustClient against SimulatedCipherTrustTransport for key creation, DEK wrap/unwrap, AAD check, and deactivation.",
+            "Using a protocol-compatible transport interface lets the exact same application code run in offline CI and against live CipherTrust.",
+        )
         client = CipherTrustClient(SimulatedCipherTrustTransport())
         key_meta = client.create_aes256_key("cm-ce-kek")
         self.assertEqual(key_meta["state"], "Active")
