@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.5.0] - 2026-11-18
+
+### Added
+- **Live `ctm-ekm-lab` Integration Suite (`python/test_ctm_integration.py`)**: Added 8 live mTLS integration tests (key provisioning/metadata, live envelope round-trip, AAD/tamper rejection, kill-switch deactivate/reactivate, versioned key rotation `v1 -> v2`, multi-tenant isolation, auth rejection, and missing mTLS client cert rejection).
+- **Educational `[PROBLEM]` / `[WHAT]` / `[WHY]` Telemetry**: Added `python/edu_output.py` and color-coded threat narration + `[CTM STATUS]` availability banners to `demo_langs.sh`, `demo_langs.ps1`, and all Python test suites.
+- **ADR-012 & Milestone Infographic**: Added `ADRs/012-sovereign-ekm-integration-and-educational-observability.md` and updated the Sovereign eKMS infographic across `crypto-lab` and `ctm-ekm-lab`.
+
 ## [1.4.0] - 2026-11-18
 
 ### Added
