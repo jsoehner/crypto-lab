@@ -75,13 +75,35 @@ public final class TestCrypto {
         SecretKey recovered = AesKeyWrapExample.unwrap(kek, wrapped);
         CryptoSupport.require(Arrays.equals(contentKey.getEncoded(), recovered.getEncoded()), "AES-KeyWrap failed");
 
-        // ML-KEM-768 (FIPS 203)
+        // ML-KEM-768 (FIPS 203) + KEM-DEM encryption
         KeyPair mlKemKeys = MlKemExample.generateKeyPair();
         KEM.Encapsulated encapsulated = MlKemExample.encapsulate(mlKemKeys.getPublic());
         SecretKey decapsulated = MlKemExample.decapsulate(mlKemKeys.getPrivate(), encapsulated.encapsulation());
         CryptoSupport.require(
                 CryptoSupport.constantTimeEquals(encapsulated.key().getEncoded(), decapsulated.getEncoded()),
                 "ML-KEM-768 shared secret mismatch"
+        );
+        byte[] kemPlaintext = "ml-kem-dem secret".getBytes(StandardCharsets.UTF_8);
+        MlKemExample.KemEnvelope kemEnv = MlKemExample.encryptWithKem(mlKemKeys.getPublic(), kemPlaintext, aad);
+        CryptoSupport.require(
+                Arrays.equals(kemPlaintext, MlKemExample.decryptWithKem(mlKemKeys.getPrivate(), kemEnv, aad)),
+                "ML-KEM-768 KEM-DEM round-trip failed"
+        );
+
+        // Hybrid X25519 + ML-KEM-768
+        KeyPair aliceX25519 = X25519HkdfExample.generateKeyPair();
+        KeyPair bobX25519 = X25519HkdfExample.generateKeyPair();
+        HybridX25519MlKemExample.HybridCiphertext hybridCt = HybridX25519MlKemExample.encryptHybrid(
+                aliceX25519, bobX25519.getPublic(), mlKemKeys.getPublic(), salt, kemPlaintext, aad
+        );
+        CryptoSupport.require(
+                Arrays.equals(
+                        kemPlaintext,
+                        HybridX25519MlKemExample.decryptHybrid(
+                                bobX25519, aliceX25519.getPublic(), mlKemKeys.getPrivate(), salt, hybridCt, aad
+                        )
+                ),
+                "Hybrid X25519+ML-KEM-768 round-trip failed"
         );
 
         // ML-DSA-65 (FIPS 204)

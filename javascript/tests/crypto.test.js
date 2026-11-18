@@ -9,12 +9,24 @@ import {
   encapsulate,
   decapsulate,
   deriveSessionKey,
+  encryptWithKem,
+  decryptWithKem,
 } from '../src/ml_kem_example.js';
 import {
   generateKeyPair as generateDsaKeyPair,
   sign as dsaSign,
   verify as dsaVerify,
 } from '../src/ml_dsa_example.js';
+import {
+  generateX25519KeyPair,
+  encryptHybrid,
+  decryptHybrid,
+} from '../src/hybrid_kem_example.js';
+import {
+  generateKeyPair as generateSlhKeyPair,
+  sign as slhSign,
+  verify as slhVerify,
+} from '../src/slh_dsa_example.js';
 
 test('SHA-256 produces 32-byte digest and detects changes', () => {
   const d1 = sha256(Buffer.from('test data'));
@@ -69,4 +81,32 @@ test('ML-DSA-65 (FIPS 204) signs and verifies, rejecting tampered messages', () 
   const sig = dsaSign(secretKey, msg);
   assert.equal(dsaVerify(publicKey, msg, sig), true);
   assert.equal(dsaVerify(publicKey, Buffer.from('tampered payload'), sig), false);
+});
+
+test('ML-KEM-768 KEM-DEM (replaces RSA-OAEP) encrypts/decrypts and rejects wrong AAD', () => {
+  const { publicKey, secretKey } = generateKemKeyPair();
+  const pt = Buffer.from('confidential kem-dem payload');
+  const aad = Buffer.from('context-v1');
+  const payload = encryptWithKem(publicKey, pt, aad);
+  assert.deepEqual(decryptWithKem(secretKey, payload, aad), pt);
+  assert.throws(() => decryptWithKem(secretKey, payload, Buffer.from('wrong-aad')));
+});
+
+test('Hybrid X25519 + ML-KEM-768 encrypts/decrypts and rejects wrong AAD', () => {
+  const aliceX = generateX25519KeyPair();
+  const bobX = generateX25519KeyPair();
+  const bobKem = generateKemKeyPair();
+  const pt = Buffer.from('hybrid pqc secret');
+  const aad = Buffer.from('hybrid-aad');
+  const payload = encryptHybrid(aliceX.privateKey, bobX.publicKey, bobKem.publicKey, pt, aad);
+  assert.deepEqual(decryptHybrid(bobX.privateKey, aliceX.publicKey, bobKem.secretKey, payload, aad), pt);
+  assert.throws(() => decryptHybrid(bobX.privateKey, aliceX.publicKey, bobKem.secretKey, payload, Buffer.from('bad-aad')));
+});
+
+test('SLH-DSA (FIPS 205) signs and verifies, rejecting tampered messages', () => {
+  const { publicKey, secretKey } = generateSlhKeyPair();
+  const msg = Buffer.from('root-ca-payload');
+  const sig = slhSign(secretKey, msg);
+  assert.equal(slhVerify(publicKey, msg, sig), true);
+  assert.equal(slhVerify(publicKey, Buffer.from('tampered-ca-payload'), sig), false);
 });

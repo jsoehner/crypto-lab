@@ -1,5 +1,6 @@
 import { hkdfSync, randomBytes } from 'node:crypto';
 import { ml_kem768 } from '@noble/post-quantum/ml-kem.js';
+import { encrypt as aesGcmEncrypt, decrypt as aesGcmDecrypt } from './aes_gcm_example.js';
 
 /**
  * Generate an ML-KEM-768 (NIST FIPS 203) keypair.
@@ -39,4 +40,31 @@ export function decapsulate(cipherText, secretKey) {
 export function deriveSessionKey(sharedSecret, salt, info) {
   const derived = hkdfSync('sha256', sharedSecret, salt, info, 32);
   return Buffer.from(derived);
+}
+
+/**
+ * KEM-DEM public-key encryption (replaces RSA-OAEP): ML-KEM-768 + HKDF-SHA-256 + AES-256-GCM.
+ * @param {Uint8Array} recipientPublicKey
+ * @param {Buffer} plaintext
+ * @param {Buffer} aad
+ */
+export function encryptWithKem(recipientPublicKey, plaintext, aad) {
+  const { cipherText: kemCiphertext, sharedSecret } = encapsulate(recipientPublicKey);
+  const salt = randomBytes(16);
+  const key = deriveSessionKey(sharedSecret, salt, Buffer.from('ml-kem-768-dem-aes-256-gcm', 'utf8'));
+  const envelope = aesGcmEncrypt(key, plaintext, aad);
+  return { kemCiphertext, salt, envelope };
+}
+
+/**
+ * KEM-DEM public-key decryption.
+ * @param {Uint8Array} recipientSecretKey
+ * @param {{ kemCiphertext: Uint8Array, salt: Buffer, envelope: { nonce: Buffer, ciphertext: Buffer, tag: Buffer } }} payload
+ * @param {Buffer} aad
+ * @returns {Buffer}
+ */
+export function decryptWithKem(recipientSecretKey, payload, aad) {
+  const sharedSecret = decapsulate(payload.kemCiphertext, recipientSecretKey);
+  const key = deriveSessionKey(sharedSecret, payload.salt, Buffer.from('ml-kem-768-dem-aes-256-gcm', 'utf8'));
+  return aesGcmDecrypt(key, payload.envelope, aad);
 }
