@@ -75,6 +75,29 @@ java -ea -cp java/out org.example.crypto.TestCrypto
 npm --prefix javascript test
 ```
 
+## Live External KMS Integration (`ctm-ekm-lab` Dependency)
+
+When the companion [ctm-ekm-lab](https://github.com/jsoehner/ctm-ekm-lab) service (or a real CipherTrust Manager Community Edition appliance) is running and `.env.ciphertrust` is sourced, `crypto-lab` automatically switches from offline simulation to live HTTPS + mTLS mode:
+
+```bash
+set -a && source /path/to/ctm-ekm-lab/.env.ciphertrust && set +a
+
+# ./demo_langs.sh detects CIPHERTRUST_URL and runs the live EKM client
+./demo_langs.sh python
+
+# Run all unit tests plus the 8 live CTM integration tests
+python3 -m unittest discover -s python -p 'test_*.py' -v
+```
+
+### Verified Capabilities When `ctm-ekm-lab` Is Running
+1. **mTLS + JWT Key Provisioning**: Authenticates over mutual TLS and creates/inspects AES-256 KEKs (`/api/v1/vault/keys2`).
+2. **Live Envelope Encryption**: Wraps and unwraps local AES-256-GCM DEKs via CipherTrust (`/api/v1/crypto/{encrypt,decrypt}`).
+3. **AAD & Tamper Rejection**: Rejects mismatched AAD at KEK unwrap (`HTTP 400`) and tampered ciphertext locally (`InvalidTag`).
+4. **Cryptographic Kill-Switch & Recovery**: `deactivate_key()` blocks decryption (`HTTP 403`); `reactivate_key()` restores access.
+5. **Versioned Key Rotation**: `rotate_key()` advances the KEK to `v2` for new wraps while `v1` envelopes continue to unwrap.
+6. **Multi-Tenant Isolation**: Deactivating one tenant's KEK leaves other tenants' KEKs operational.
+7. **Auth & mTLS Enforcement**: Rejects invalid credentials/JWTs (`HTTP 401`) and unauthenticated TLS clients (`SSLError`).
+
 ## How to Adopt These Patterns
 
 1. **Start from the ADR**: Read the decision record in [ADRs/](ADRs/) for the primitive you need before copying code. Each ADR explains key sizes, nonces, padding, and tradeoffs.

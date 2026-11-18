@@ -19,6 +19,10 @@ run_python() {
     echo -e "\n${GREEN}[Python] Running classical cryptography examples...${NC}"
     if command -v python3 &> /dev/null; then
         python3 python/run_all.py
+        if [ -n "${CIPHERTRUST_URL:-}" ]; then
+            echo -e "${GREEN}[Python + CTM] Live CipherTrust detected at ${CIPHERTRUST_URL}; running EKM integration...${NC}"
+            python3 python/ciphertrust_ekm_example.py
+        fi
     else
         echo "Python 3 is not installed."
     fi

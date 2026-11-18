@@ -75,26 +75,69 @@ class SimulatedCipherTrustTransport:
 
     def request(self, method: str, path: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         payload = payload or {}
+        if method == "GET" and path.startswith("/api/v1/vault/keys2/"):
+            key_name = path.split("/")[5]
+            rec = self._keys.get(key_name)
+            if not rec:
+                raise KeyError(f"Key not found in CipherTrust: {key_name}")
+            return {
+                "id": rec["id"],
+                "name": key_name,
+                "algorithm": "AES",
+                "size": 256,
+                "state": rec["state"],
+                "version": rec["current_version"],
+            }
+
         if method == "POST" and path == "/api/v1/vault/keys2":
             name = payload["name"]
-            key_id = f"cm-key-{len(self._keys) + 1}"
-            self._keys[name] = {"id": key_id, "name": name, "material": random_bytes(32), "state": "Active"}
-            return {"id": key_id, "name": name, "algorithm": "AES", "size": 256, "state": "Active"}
+            if name not in self._keys:
+                self._keys[name] = {
+                    "id": f"cm-key-{len(self._keys) + 1}",
+                    "name": name,
+                    "current_version": 1,
+                    "versions": {1: random_bytes(32)},
+                    "state": "Active",
+                }
+            rec = self._keys[name]
+            return {
+                "id": rec["id"],
+                "name": name,
+                "algorithm": "AES",
+                "size": 256,
+                "state": rec["state"],
+                "version": rec["current_version"],
+            }
 
         if method == "POST" and path.startswith("/api/v1/vault/keys2/") and path.endswith("/deactivate"):
             key_name = path.split("/")[5]
             self._keys[key_name]["state"] = "Deactivated"
             return {"name": key_name, "state": "Deactivated"}
 
+        if method == "POST" and path.startswith("/api/v1/vault/keys2/") and path.endswith("/reactivate"):
+            key_name = path.split("/")[5]
+            self._keys[key_name]["state"] = "Active"
+            return {"name": key_name, "state": "Active"}
+
+        if method == "POST" and path.startswith("/api/v1/vault/keys2/") and path.endswith("/rotate"):
+            key_name = path.split("/")[5]
+            rec = self._keys[key_name]
+            new_ver = rec["current_version"] + 1
+            rec["current_version"] = new_ver
+            rec["versions"][new_ver] = random_bytes(32)
+            return {"id": rec["id"], "name": key_name, "version": new_ver, "state": rec["state"]}
+
         if method == "POST" and path == "/api/v1/crypto/encrypt":
             record = self._require_active(payload["id"])
+            ver = record["current_version"]
             nonce = random_bytes(12)
             aad = base64.b64decode(payload.get("aad", "")) if payload.get("aad") else b""
             pt = base64.b64decode(payload["plaintext"])
-            ct_and_tag = AESGCM(record["material"]).encrypt(nonce, pt, aad)
+            ct_and_tag = AESGCM(record["versions"][ver]).encrypt(nonce, pt, aad)
             ct, tag = ct_and_tag[:-16], ct_and_tag[-16:]
             return {
                 "id": record["id"],
+                "version": ver,
                 "ciphertext": base64.b64encode(ct).decode("ascii"),
                 "iv": base64.b64encode(nonce).decode("ascii"),
                 "tag": base64.b64encode(tag).decode("ascii"),
@@ -102,11 +145,12 @@ class SimulatedCipherTrustTransport:
 
         if method == "POST" and path == "/api/v1/crypto/decrypt":
             record = self._require_active(payload["id"])
+            ver = int(payload.get("version", record["current_version"]))
             nonce = base64.b64decode(payload["iv"])
             ct = base64.b64decode(payload["ciphertext"])
             tag = base64.b64decode(payload["tag"])
             aad = base64.b64decode(payload.get("aad", "")) if payload.get("aad") else b""
-            pt = AESGCM(record["material"]).decrypt(nonce, ct + tag, aad)
+            pt = AESGCM(record["versions"][ver]).decrypt(nonce, ct + tag, aad)
             return {"plaintext": base64.b64encode(pt).decode("ascii")}
 
         raise ValueError(f"Unsupported simulated endpoint: {method} {path}")
@@ -150,10 +194,19 @@ class CipherTrustClient:
             {"name": name, "algorithm": "AES", "size": 256, "undeletable": False, "unexportable": True},
         )
 
+    def get_key_metadata(self, name: str) -> dict[str, Any]:
+        return self.transport.request("GET", f"/api/v1/vault/keys2/{name}")
+
     def deactivate_key(self, name: str) -> dict[str, Any]:
         return self.transport.request("POST", f"/api/v1/vault/keys2/{name}/deactivate", {})
 
-    def wrap_dek(self, key_name: str, dek: bytes, aad: bytes) -> dict[str, str]:
+    def reactivate_key(self, name: str) -> dict[str, Any]:
+        return self.transport.request("POST", f"/api/v1/vault/keys2/{name}/reactivate", {})
+
+    def rotate_key(self, name: str) -> dict[str, Any]:
+        return self.transport.request("POST", f"/api/v1/vault/keys2/{name}/rotate", {})
+
+    def wrap_dek(self, key_name: str, dek: bytes, aad: bytes) -> dict[str, Any]:
         return self.transport.request(
             "POST",
             "/api/v1/crypto/encrypt",
@@ -165,19 +218,18 @@ class CipherTrustClient:
             },
         )
 
-    def unwrap_dek(self, key_name: str, wrapped: dict[str, str], aad: bytes) -> bytes:
-        resp = self.transport.request(
-            "POST",
-            "/api/v1/crypto/decrypt",
-            {
-                "id": key_name,
-                "mode": "GCM",
-                "ciphertext": wrapped["ciphertext"],
-                "iv": wrapped["iv"],
-                "tag": wrapped["tag"],
-                "aad": base64.b64encode(aad).decode("ascii"),
-            },
-        )
+    def unwrap_dek(self, key_name: str, wrapped: dict[str, Any], aad: bytes) -> bytes:
+        payload: dict[str, Any] = {
+            "id": key_name,
+            "mode": "GCM",
+            "ciphertext": wrapped["ciphertext"],
+            "iv": wrapped["iv"],
+            "tag": wrapped["tag"],
+            "aad": base64.b64encode(aad).decode("ascii"),
+        }
+        if "version" in wrapped:
+            payload["version"] = wrapped["version"]
+        resp = self.transport.request("POST", "/api/v1/crypto/decrypt", payload)
         return base64.b64decode(resp["plaintext"])
 
 
