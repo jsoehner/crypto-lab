@@ -1,5 +1,5 @@
 {
-  "name": "secure-crypto-reference-examples-js",
+  "name": "crypto-lab-js",
   "version": "1.4.0",
   "description": "Node.js classical and post-quantum (FIPS 203 / FIPS 204) cryptographic reference examples",
   "type": "module",

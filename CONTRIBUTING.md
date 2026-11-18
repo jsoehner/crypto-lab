@@ -1,4 +1,4 @@
-# Contributing to Secure Crypto Reference Examples
+# Contributing to Crypto Lab
 
 Thank you for contributing. Follow these guidelines when adding or updating cryptographic examples, tests, or governance docs.
 

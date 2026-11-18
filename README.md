@@ -1,4 +1,6 @@
-# Secure Crypto Reference Examples
+# Crypto Lab
+
+*(Formerly `secure_crypto_reference_examples`)*
 
 Vetted classical and post-quantum (PQC) cryptographic reference implementations in **Python**, **Java 25**, **JavaScript (Node.js 22)**, and **PowerShell**, paired with Architectural Decision Records (ADRs) and an automated SBOM/CBOM supply-chain pipeline.
 
