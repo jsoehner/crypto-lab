@@ -111,24 +111,14 @@ python3 -m unittest discover -s python -p 'test_*.py' -v
    - Replace `Ed25519` / `RSA-PSS` signatures with **ML-DSA-65** ([MlDsaExample.java](java/src/main/java/org/example/crypto/MlDsaExample.java), [ml_dsa_example.js](javascript/src/ml_dsa_example.js)).
 4. **Verify failure modes**: Every wrapper should reject tampered ciphertexts, mismatched AAD, and invalid signatures in constant time.
 
-## Automated SBOM, CBOM & PQC Audit Pipeline
+## 🔐 SBOM, CBOM & PQC Governance
 
-This repository tracks component and cryptographic inventory in CI ([.github/workflows/sbom-cbom.yml](.github/workflows/sbom-cbom.yml)) and publishes the latest assessment to [docs/security/CRYPTOGRAPHIC_AUDIT.md](docs/security/CRYPTOGRAPHIC_AUDIT.md).
+This repository integrates the [`jsoehner/jsi-bom-actions`](https://github.com/jsoehner/jsi-bom-actions) GitHub Action ([`.github/workflows/sbom-cbom.yml`](.github/workflows/sbom-cbom.yml)) for automated Software Bill of Materials (SBOM), Cryptographic Bill of Materials (CBOM), and Post-Quantum Cryptography (PQC) readiness auditing.
 
-### Run the Audit Locally
+- **Latest Audit Report:** [`docs/security/CRYPTOGRAPHIC_AUDIT.md`](docs/security/CRYPTOGRAPHIC_AUDIT.md)
+- **Learn More:** [jsoehner/jsi-bom-actions](https://github.com/jsoehner/jsi-bom-actions)
 
-```bash
-# Generate SBOM, CBOM, and AST cryptographic scan results into oss/
-bash scripts/generate_boms.sh -t dir -o oss .
-
-# Validate generated BOM schemas and coverage
-bash scripts/test_boms.sh oss
-
-# Generate the PQC readiness markdown summary
-python3 scripts/analyze_cbom.py oss/cbom.json --sbom oss/sbom.cyclonedx.json --markdown oss/crypto-summary.md
-```
-
-### Architectural Decision Records
+## Architectural Decision Records
 
 - [ADR-001: Cryptographic Standards](ADRs/001-cryptographic-standards.md)
 - [ADR-002: Authenticated Encryption (AES-GCM)](ADRs/002-authenticated-encryption-aes-gcm.md)
