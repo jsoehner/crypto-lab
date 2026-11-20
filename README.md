@@ -6,6 +6,8 @@ Vetted classical and post-quantum (PQC) cryptographic reference implementations 
 
 **Version:** `1.6.0` (see [CHANGELOG.md](CHANGELOG.md) and [PQC Migration Assessment](docs/security/PQC_MIGRATION_ASSESSMENT.md))
 
+> **Build Verification (`2026-11-20`):** Verified functional across Python 3.15, Java 25, and Node.js 22 by **Jeffs' Automated build and deploy agent** — see [docs/BUILD_VERIFICATION.md](docs/BUILD_VERIFICATION.md).
+
 ## Why This Project Exists
 
 Teams migrating to modern cryptography face two recurring problems:
