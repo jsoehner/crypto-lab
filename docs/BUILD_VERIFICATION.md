@@ -2,8 +2,8 @@
 
 - **Date:** `2026-11-20`
 - **Verified By:** **Jeffs' Automated build and deploy agent**
-- **Repository:** `jsoehner/crypto-lab` (`v1.6.0`)
-- **Overall Status:** `VERIFIED` (Python 3.15, Java 25, JavaScript / Node.js 22)
+- **Repository:** `jsoehner/crypto-lab` (`v2.0.0`)
+- **Overall Status:** `VERIFIED` (Python 3.15 Offline + Live `ctm-ekm-lab` mTLS Integration, Java 25, JavaScript / Node.js 22)
 
 ---
 
@@ -21,13 +21,13 @@ Configured via `setup_trusted_oss_repo.py` (`--mode virtual`):
 
 **Ecosystem Registry Observations:**
 - **PyPI (`http://oss.jsigroup.local:8080/pypi/virtual/simple`)**: HTTP `200` — resolved `cryptography==50.0.2`, `cffi==2.1.1`, and `pycparser==3.12` cleanly on CPython 3.15.2.
-- **npm (`http://oss.jsigroup.local:8080/npm/`)**: HTTP `404` (npm proxy not enabled on local cache); installed `@noble/post-quantum` deterministically via `npm ci` (0 vulnerabilities).
+- **npm (`http://oss.jsigroup.local:8080/npm/`)**: HTTP `404` (npm proxy not enabled on local cache); `@noble/post-quantum` verified deterministically via `npm test`.
 
 ---
 
 ## 2. Build, Run & Functional Verification Commands
 
-### Python (`CPython 3.15.2`, `uv 0.13.7`)
+### Python (`CPython 3.15.2`, `uv 0.13.7`) — Offline + Live `ctm-ekm-lab` mTLS
 
 ```bash
 uv venv /tmp/crypto-lab-verify-venv
@@ -35,8 +35,14 @@ uv pip install --python /tmp/crypto-lab-verify-venv/bin/python \
   --default-index http://oss.jsigroup.local:8080/pypi/virtual/simple \
   -r python/requirements.txt
 
+# Offline baseline (15 passed, 8 live CTM tests skipped)
 /tmp/crypto-lab-verify-venv/bin/python -m unittest discover -s python -p 'test_*.py' -v
 /tmp/crypto-lab-verify-venv/bin/python python/run_all.py
+
+# Live mTLS integration against ctm-ekm-lab mock-cm-ce/server.py on isolated port 18443 (23/23 passed)
+set -a && source /home/jsoehner/ctm-ekm-lab/.env.ciphertrust && set +a
+CIPHERTRUST_URL="https://127.0.0.1:18443" \
+  /tmp/crypto-lab-verify-venv/bin/python -m unittest discover -s python -p 'test_*.py' -v
 ```
 
 ### Java 25 (`OpenJDK 25.0.5`, `javac 25.0.5`)
@@ -50,11 +56,10 @@ done
 java -ea -cp /tmp/crypto-lab-java-out org.example.crypto.TestCrypto
 ```
 
-### JavaScript (`Node.js v22.23.2`, `npm 10.9.8`)
+### JavaScript (`Node.js v22.23.2`, `npm`)
 
 ```bash
 cd javascript
-npm ci
 npm test
 npm run demo
 ```
@@ -65,10 +70,9 @@ npm run demo
 
 | Suite | Runtime | Result | Summary |
 | :--- | :--- | :--- | :--- |
-| **Python Unit Tests** | CPython 3.15.2 (`cryptography 50.0.2`) | ✅ PASS | **15 passed, 8 skipped** (23 discovered; 8 live `ctm-ekm-lab` integration tests intentionally skipped when `CIPHERTRUST_URL` is unset). Verified AES-GCM, SHA-256, HMAC, PBKDF2, RSA-OAEP/PSS, Ed25519, X25519+HKDF, AES-KW, PKCS#8, Azure/GCP BYOK+CMK, Vault OIDC EKM Proxy, Offline CipherTrust EKM, and Stage 3 Multi-Cloud Cascade. |
-| **Python CLI Demo** | CPython 3.15.2 | ✅ PASS | `python/run_all.py` executed all 9 reference examples cleanly. |
+| **Python Unit + Live mTLS Integration** | CPython 3.15.2 (`cryptography 50.0.2`) | ✅ PASS | **23 / 23 passed** (`15` offline + `8` live `ctm-ekm-lab` mTLS integration tests: key provisioning, live envelope wrap/unwrap, AAD/tamper rejection, kill-switch `403` deactivate/reactivate, versioned key rotation `v1 -> v2`, multi-tenant isolation, JWT `401`, and missing mTLS cert `SSLError`). |
+| **Python CLI Demo** | CPython 3.15.2 | ✅ PASS | `python/run_all.py` executed all reference examples cleanly. |
 | **Java 25 Examples & Tests** | OpenJDK 25.0.5 | ✅ PASS | Compiled all sources with `javac 25.0.5`, executed all 11 `*Example` classes (including native JEP 496 `ML-KEM-768`, `HybridX25519MlKemExample`, and JEP 497 `ML-DSA-65`), and `TestCrypto` (`-ea`) passed (`All Java tests passed!`). |
 | **JavaScript Unit Tests** | Node.js v22.23.2 (`@noble/post-quantum`) | ✅ PASS | **8 / 8 tests passed** (`node --test tests/crypto.test.js`): SHA-256, HMAC-SHA-256, AES-256-GCM, ML-KEM-768 (FIPS 203), ML-DSA-65 (FIPS 204), ML-KEM-768 KEM-DEM, Hybrid X25519 + ML-KEM-768, and SLH-DSA (FIPS 205). |
-| **JavaScript CLI Demo** | Node.js v22.23.2 | ✅ PASS | `npm run demo` (`src/run_all.js`) executed all 7 classical + PQC examples cleanly. |
+| **JavaScript CLI Demo** | Node.js v22.23.2 | ✅ PASS | `npm run demo` (`src/run_all.js`) executed all classical + PQC examples cleanly. |
 | **PowerShell** | Optional (`pwsh` 7+) | ⏭️ N/A | `pwsh` is not installed on the Linux verification host (optional per `README.md`). |
-| **Web UI / HTTP API** | N/A | ⏭️ N/A | Multi-language cryptographic CLI/library reference repository (no Web UI or daemon). |

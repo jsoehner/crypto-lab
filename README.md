@@ -4,9 +4,9 @@
 
 Vetted classical and post-quantum (PQC) cryptographic reference implementations in **Python**, **Java 25**, **JavaScript (Node.js 22)**, and **PowerShell**, paired with Architectural Decision Records (ADRs) and an automated SBOM/CBOM supply-chain pipeline.
 
-**Version:** `1.6.0` (see [CHANGELOG.md](CHANGELOG.md) and [PQC Migration Assessment](docs/security/PQC_MIGRATION_ASSESSMENT.md))
+**Version:** `2.0.0` (see [CHANGELOG.md](CHANGELOG.md) and [PQC Migration Assessment](docs/security/PQC_MIGRATION_ASSESSMENT.md))
 
-> **Build Verification (`2026-11-20`):** Verified functional across Python 3.15, Java 25, and Node.js 22 by **Jeffs' Automated build and deploy agent** — see [docs/BUILD_VERIFICATION.md](docs/BUILD_VERIFICATION.md).
+> **Build Verification (`2026-11-20` · `v2.0.0`):** Verified functional across Python 3.15 (15 offline + 8 live `ctm-ekm-lab` mTLS tests), Java 25, and Node.js 22 by **Jeffs' Automated build and deploy agent** — see [docs/BUILD_VERIFICATION.md](docs/BUILD_VERIFICATION.md).
 
 ## Why This Project Exists
 
@@ -122,6 +122,8 @@ This repository integrates the [`jsoehner/jsi-bom-actions`](https://github.com/j
 
 ## Architectural Decision Records
 
+See the master index at [`ADRs/README.md`](ADRs/README.md):
+
 - [ADR-001: Cryptographic Standards](ADRs/001-cryptographic-standards.md)
 - [ADR-002: Authenticated Encryption (AES-GCM)](ADRs/002-authenticated-encryption-aes-gcm.md)
 - [ADR-003: Password Hashing (PBKDF2)](ADRs/003-password-hashing-pbkdf2.md)
@@ -130,11 +132,12 @@ This repository integrates the [`jsoehner/jsi-bom-actions`](https://github.com/j
 - [ADR-006: Digital Signatures (Ed25519)](ADRs/006-digital-signatures-ed25519.md)
 - [ADR-007: Message Authentication (HMAC)](ADRs/007-message-authentication-hmac.md)
 - [ADR-008: Key Wrapping & Serialization](ADRs/008-key-wrapping-and-serialization.md)
-- [ADR-009: Automated SBOM & CBOM Governance](ADRs/009-automated-sbom-cbom-supply-chain-governance.md)
+- [ADR-009: Automated SBOM & CBOM Governance](ADRs/009-automated-sbom-cbom-supply-chain-governance.md) *(Partially Superseded by ADR-014)*
 - [ADR-010: Post-Quantum Cryptography (ML-KEM-768 & ML-DSA-65)](ADRs/010-post-quantum-cryptography-ml-kem-ml-dsa.md)
 - [ADR-011: Cloud HSM BYOK/CMK & External KMS (EKM/HYOK) Control](ADRs/011-cloud-hsm-byok-cmk-and-ekm-control.md)
 - [ADR-012: Sovereign eKMS Integration & Educational Observability](ADRs/012-sovereign-ekm-integration-and-educational-observability.md)
 - [ADR-013: Absorption of OIDC + mTLS Vault Transit EKM Proxy (`ekm-demo`)](ADRs/013-oidc-mtls-ekm-proxy-and-vault-transit-absorption.md)
+- [ADR-014: Three-Stage Sovereign EKM Architecture, Unified `jsi-bom-actions` Governance & Automated Verification](ADRs/014-three-stage-sovereign-ekm-and-unified-governance.md)
 
 ## Contributing
 

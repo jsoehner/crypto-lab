@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
+## [2.0.0] - 2026-11-20
+
+### Architecture & Major Changes
+- **Major Version Bump (`v2.0.0`):** Reflects the unified **Three-Stage Sovereign EKM & Multi-Language PQC Architecture** spanning local CipherTrust eKMS (Stage 1), OIDC + mTLS Vault Transit EKM Proxy (Stage 2), Multi-Cloud EKM Cascade (Stage 3), and NIST FIPS 203/204/205 PQC across Python 3.15, Java 25, and Node.js 22.
+- **Updated Architecture Infographic:** Replaced `docs/assets/ekms-control-plane-infographic.jpg` with the `v2.0.0` Three-Stage Sovereign EKM & PQC blueprint infographic.
+
+### Governance, Decisions & Verification
+- **ADR-014 & Master ADR Index:** Added [ADRs/014-three-stage-sovereign-ekm-and-unified-governance.md](ADRs/014-three-stage-sovereign-ekm-and-unified-governance.md) (superseding inline CI workflow details in ADR-009 with SHA-pinned `jsoehner/jsi-bom-actions@v1.1.1`) and [ADRs/README.md](ADRs/README.md).
+- **CI & Runtime Upgrades:** Standardized on `jsoehner/jsi-bom-actions@v1.1.1`, `actions/setup-node@v7`, `actions/setup-python@v7`, and `actions/setup-java@v6` via Dependabot.
+- **Functional Verification:** Verified end-to-end across Python 3.15 (15 offline + 8 live `ctm-ekm-lab` mTLS tests = 23/23), Java 25 (11 examples + `TestCrypto`), and Node.js 22 (8/8 tests + demo) by **Jeffs' Automated build and deploy agent** ([docs/BUILD_VERIFICATION.md](docs/BUILD_VERIFICATION.md)).
+
 ## [1.6.0] - 2026-11-18
 
 ### Added

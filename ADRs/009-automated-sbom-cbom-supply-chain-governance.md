@@ -1,7 +1,7 @@
 # ADR 009: Automated SBOM & CBOM Supply Chain Governance
 
 ## Status
-Accepted
+Partially Superseded (inline GitHub Actions workflow steps superseded by [ADR-014](014-three-stage-sovereign-ekm-and-unified-governance.md))
 
 ## Context
 As a reference implementation repository for production-grade cryptographic operations across Python and Java, ensuring verifiable software supply chain integrity and transparent cryptographic inventory is paramount. 
