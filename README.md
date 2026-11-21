@@ -6,7 +6,7 @@ Vetted classical and post-quantum (PQC) cryptographic reference implementations 
 
 **Version:** `2.0.0` (see [CHANGELOG.md](CHANGELOG.md) and [PQC Migration Assessment](docs/security/PQC_MIGRATION_ASSESSMENT.md))
 
-> **Build Verification (`2026-11-20` · `v2.0.0`):** Verified functional across Python 3.15 (15 offline + 8 live `ctm-ekm-lab` mTLS tests), Java 25, and Node.js 22 by **Jeffs' Automated build and deploy agent** — see [docs/BUILD_VERIFICATION.md](docs/BUILD_VERIFICATION.md).
+> **Build Verification (`2026-11-21` · `v2.0.0`):** Verified jointly with `ctm-ekm-lab` across Python 3.15 (15 offline + 8 live mTLS tests + `demo_langs.sh` auto-activation), Java 25, and Node.js 22 by **Jeffs' Automated build and deploy agent** — see [docs/BUILD_VERIFICATION.md](docs/BUILD_VERIFICATION.md).
 
 ## Why This Project Exists
 
@@ -83,7 +83,9 @@ npm --prefix javascript test
 
 See the [Three-Stage Sovereign EKM & PQC Workflow Architecture](docs/security/THREE_STAGE_EKM_WORKFLOW.md) for detailed Mermaid flowcharts, runtime sequence diagrams, and KEK lifecycle state machines.
 
-When the companion [ctm-ekm-lab](https://github.com/jsoehner/ctm-ekm-lab) service (or a real CipherTrust Manager Community Edition appliance) is running and `.env.ciphertrust` is sourced, `crypto-lab` automatically switches from offline simulation to live HTTPS + mTLS mode:
+When the companion [ctm-ekm-lab](https://github.com/jsoehner/ctm-ekm-lab) service (or a real CipherTrust Manager Community Edition appliance) is running and `.env.ciphertrust` is sourced, `crypto-lab` automatically switches from offline simulation to live HTTPS + mTLS mode.
+
+> **One-Command Auto-Activation (`./demo_langs.sh`):** If `CIPHERTRUST_URL` is unset and a sibling `../ctm-ekm-lab` directory (or `$CTM_EKM_LAB_DIR`) is present, `./demo_langs.sh` interactively prompts to auto-start `ctm-ekm-lab`'s local HTTPS + X.509 v3 mTLS server (`CM_REQUIRE_MTLS=true`), bootstrap `.env.ciphertrust` if missing, run the live EKM demos, and automatically stop the background server on exit (`trap EXIT`).
 
 ```bash
 set -a && source /path/to/ctm-ekm-lab/.env.ciphertrust && set +a

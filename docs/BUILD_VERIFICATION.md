@@ -1,9 +1,9 @@
 # Build & Functional Verification Report
 
-- **Date:** `2026-11-20`
+- **Date:** `2026-11-21`
 - **Verified By:** **Jeffs' Automated build and deploy agent**
 - **Repository:** `jsoehner/crypto-lab` (`v2.0.0`)
-- **Overall Status:** `VERIFIED` (Python 3.15 Offline + Live `ctm-ekm-lab` mTLS Integration, Java 25, JavaScript / Node.js 22)
+- **Overall Status:** `VERIFIED` (Joint `crypto-lab` + `ctm-ekm-lab` Validation: Python 3.15 Offline + Live mTLS + `demo_langs.sh` Auto-Activation, Java 25, Node.js 22)
 
 ---
 
@@ -71,7 +71,7 @@ npm run demo
 | Suite | Runtime | Result | Summary |
 | :--- | :--- | :--- | :--- |
 | **Python Unit + Live mTLS Integration** | CPython 3.15.2 (`cryptography 50.0.2`) | ✅ PASS | **23 / 23 passed** (`15` offline + `8` live `ctm-ekm-lab` mTLS integration tests: key provisioning, live envelope wrap/unwrap, AAD/tamper rejection, kill-switch `403` deactivate/reactivate, versioned key rotation `v1 -> v2`, multi-tenant isolation, JWT `401`, and missing mTLS cert `SSLError`). |
-| **Python CLI Demo** | CPython 3.15.2 | ✅ PASS | `python/run_all.py` executed all reference examples cleanly. |
+| **Python CLI Demo & Auto-Activation** | CPython 3.15.2 | ✅ PASS | `python/run_all.py` passed; `./demo_langs.sh` auto-activated sibling `ctm-ekm-lab` (`CM_REQUIRE_MTLS=true` on `:8443`), ran `CipherTrustEkmExample OK mode=live`, `VaultEkmProxyExample OK mode=simulated`, and `Stage3MultiCloudOrchestrator OK`, and cleanly released `:8443` on `EXIT`. |
 | **Java 25 Examples & Tests** | OpenJDK 25.0.5 | ✅ PASS | Compiled all sources with `javac 25.0.5`, executed all 11 `*Example` classes (including native JEP 496 `ML-KEM-768`, `HybridX25519MlKemExample`, and JEP 497 `ML-DSA-65`), and `TestCrypto` (`-ea`) passed (`All Java tests passed!`). |
 | **JavaScript Unit Tests** | Node.js v22.23.2 (`@noble/post-quantum`) | ✅ PASS | **8 / 8 tests passed** (`node --test tests/crypto.test.js`): SHA-256, HMAC-SHA-256, AES-256-GCM, ML-KEM-768 (FIPS 203), ML-DSA-65 (FIPS 204), ML-KEM-768 KEM-DEM, Hybrid X25519 + ML-KEM-768, and SLH-DSA (FIPS 205). |
 | **JavaScript CLI Demo** | Node.js v22.23.2 | ✅ PASS | `npm run demo` (`src/run_all.js`) executed all classical + PQC examples cleanly. |

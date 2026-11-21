@@ -13,18 +13,90 @@ echo -e "            Crypto Lab — Interactive Security & PQC Demo"
 echo -e "${BLUE}======================================================================${NC}"
 echo -e "${MAGENTA}[PROBLEM]${NC} Threat / Scenario  |  ${CYAN}[WHAT]${NC} Action  |  ${YELLOW}[WHY]${NC} Security Rationale"
 
-if [ -n "${CIPHERTRUST_URL:-}" ]; then
-    mtls_state="disabled"
-    if [ -n "${CIPHERTRUST_CLIENT_CERT:-}" ]; then
-        mtls_state="enabled"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CTM_EKM_LAB_DIR="${CTM_EKM_LAB_DIR:-$(cd "${SCRIPT_DIR}/.." && pwd)/ctm-ekm-lab}"
+CTM_LAB_PID=""
+
+cleanup_ctm_lab() {
+    if [ -n "${CTM_LAB_PID:-}" ]; then
+        kill "$CTM_LAB_PID" 2>/dev/null || true
     fi
-    if python3 -c "import urllib.parse, socket; u=urllib.parse.urlparse('${CIPHERTRUST_URL}'); s=socket.create_connection((u.hostname, u.port or 443), timeout=2); s.close()" 2>/dev/null; then
-        echo -e "${GREEN}[CTM STATUS] AVAILABLE${NC} — Live CipherTrust EKM at ${CIPHERTRUST_URL} (mTLS: ${mtls_state})"
+}
+trap cleanup_ctm_lab EXIT
+
+is_ctm_reachable() {
+    python3 -c "import urllib.parse, socket; u=urllib.parse.urlparse('${CIPHERTRUST_URL}'); s=socket.create_connection((u.hostname, u.port or 443), timeout=2); s.close()" 2>/dev/null
+}
+
+print_ctm_status() {
+    if [ -n "${CIPHERTRUST_URL:-}" ]; then
+        mtls_state="disabled"
+        if [ -n "${CIPHERTRUST_CLIENT_CERT:-}" ]; then
+            mtls_state="enabled"
+        fi
+        if is_ctm_reachable; then
+            echo -e "${GREEN}[CTM STATUS] AVAILABLE${NC} — Live CipherTrust EKM at ${CIPHERTRUST_URL} (mTLS: ${mtls_state})"
+            return 0
+        else
+            echo -e "\033[0;33m[CTM STATUS] UNREACHABLE\033[0m — ${CIPHERTRUST_URL} did not respond (live CTM calls will fail)"
+            return 1
+        fi
     else
-        echo -e "\033[0;33m[CTM STATUS] UNREACHABLE\033[0m — ${CIPHERTRUST_URL} did not respond (live CTM calls will fail)"
+        echo -e "\033[0;33m[CTM STATUS] NOT AVAILABLE\033[0m — CIPHERTRUST_URL unset (using offline EKM simulator)"
+        return 1
     fi
-else
-    echo -e "\033[0;33m[CTM STATUS] NOT AVAILABLE\033[0m — CIPHERTRUST_URL unset (using offline EKM simulator)"
+}
+
+activate_ctm_lab() {
+    local lab_dir="$1"
+    local env_file="${lab_dir}/.env.ciphertrust"
+
+    if [ -f "$env_file" ]; then
+        set -a
+        # shellcheck disable=SC1090
+        source "$env_file"
+        set +a
+    else
+        export CIPHERTRUST_URL="${CIPHERTRUST_URL:-https://127.0.0.1:8443}"
+        export CIPHERTRUST_USER="${CIPHERTRUST_USER:-admin}"
+        export CIPHERTRUST_PASSWORD="${CIPHERTRUST_PASSWORD:-lab-bootstrap-pass}"
+    fi
+
+    if ! is_ctm_reachable; then
+        if [ ! -f "${lab_dir}/certs/lab-ca.crt" ] || [ ! -f "${lab_dir}/certs/cm-server.crt" ] || [ ! -f "${lab_dir}/certs/ekm-client.crt" ]; then
+            echo -e "${CYAN}[CTM SETUP]${NC} Generating lab mTLS certificates..."
+            bash "${lab_dir}/scripts/generate_mtls_certs.sh"
+        fi
+        echo -e "${CYAN}[CTM SETUP]${NC} Starting local ctm-ekm-lab mock server..."
+        CM_REQUIRE_MTLS=true python3 "${lab_dir}/mock-cm-ce/server.py" >/tmp/ctm-ekm-lab.log 2>&1 &
+        CTM_LAB_PID=$!
+        for _ in $(seq 1 20); do
+            if is_ctm_reachable; then
+                break
+            fi
+            sleep 0.25
+        done
+    fi
+
+    if [ ! -f "$env_file" ] && is_ctm_reachable; then
+        echo -e "${CYAN}[CTM SETUP]${NC} Bootstrapping CipherTrust lab environment..."
+        bash "${lab_dir}/scripts/bootstrap_cm_ce.sh"
+        set -a
+        # shellcheck disable=SC1090
+        source "$env_file"
+        set +a
+    fi
+
+    print_ctm_status || true
+}
+
+if ! print_ctm_status; then
+    if [ -d "$CTM_EKM_LAB_DIR" ] && [ -z "${CI:-}" ] && { [ -t 0 ] || [ -z "${1:-}" ]; }; then
+        read -r -p "Activate optional ctm-ekm-lab dependency before continuing? [y/N]: " activate_ctm || true
+        if [[ "${activate_ctm,,}" =~ ^(y|yes)$ ]]; then
+            activate_ctm_lab "$CTM_EKM_LAB_DIR"
+        fi
+    fi
 fi
 
 choice="${1:-}"

@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
+### Added
+- **Interactive `ctm-ekm-lab` Auto-Activation (`demo_langs.sh`):** Automatically detects a sibling `../ctm-ekm-lab` (or `$CTM_EKM_LAB_DIR`) checkout when `CIPHERTRUST_URL` is unset, prompts to start the local HTTPS + X.509 v3 mTLS mock server (`CM_REQUIRE_MTLS=true`), bootstraps `.env.ciphertrust` if needed, executes live EKM demos, and tears down the background process cleanly via `trap EXIT`.
+
 ## [2.0.0] - 2026-11-20
 
 ### Architecture & Major Changes
